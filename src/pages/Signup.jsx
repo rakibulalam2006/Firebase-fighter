@@ -1,42 +1,96 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import MyContainer from "../Components/MyContainer";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../Firebase/Firebase.config";
 import { toast } from "react-toastify";
 import { useState } from "react";
 import { FaRegEye } from "react-icons/fa";
 import { IoEyeOff } from "react-icons/io5";
+import { AuthContext } from "../context/AuthContext";
+import { useContext } from "react";
 
 const Signup = () => {
   const [show, setShow] = useState(false);
 
+  const result = useContext(AuthContext);
+  // console.log(result);
+
+  const {
+    createUserWithEmailAndPasswordFunc,
+    updateProfileFunc,
+    sendEmailVerificationFunc,
+    setLoading,
+    signOutFunc,
+    setUser,
+  } = useContext(AuthContext);
+  const navigate = useNavigate();
+
   const handleSignup = (e) => {
     e.preventDefault();
+    const displayName = e.target.name?.value;
+    const photoURL  = e.target.photo?.value;
     const email = e.target.email?.value;
     const password = e.target.password?.value;
-    console.log("signup function entered", { email, password });
-    // console.log(password.length);
-    // if(password.length>6){
-    //   toast.error('Password should be at least 6 digit')
-    //   return;
-    // }
-    // const regExp =
-    //   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    // console.log(regExp.test(password));
-    // if (!regExp.test(password)) {
-    //   toast.error(
-    //     "*Password must be at least 8 characters long and include at least one lowercase letter, one uppercase letter, one number, and one special character (@ $ ! % * ? &). Only letters, numbers, and those special characters are allowed.*",
-    //   );
-    //   return;
-    // }
+    console.log("signup function entered", {
+       email,
+       password,
+       displayName,
+       photoURL 
+       });
 
-    createUserWithEmailAndPassword(auth, email, password)
+      // console.log(password.length);
+      // if(password.length>6){
+      //   toast.error('Password should be at least 6 digit')
+      //   return;
+      // }
+      // const regExp =
+      //   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      // console.log(regExp.test(password));
+      // if (!regExp.test(password)) {
+      //   toast.error(
+      //     "*Password must be at least 8 characters long and include at least one lowercase letter, one uppercase letter, one number, and one special character (@ $ ! % * ? &). Only letters, numbers, and those special characters are allowed.*",
+      //   );
+      //   return;
+      // }
+
+      // 1st step
+    
+      createUserWithEmailAndPasswordFunc(email,password)
       .then((res) => {
-        console.log(res);
+        // 2nd step: update profile
+        console.log(res)
+        updateProfileFunc(displayName, photoURL)
+          .then((res) => {
+            console.log(res);
+            // 3rd step : update profile
+            sendEmailVerificationFunc()
+              .then((res) => {
+                console.log(res);
+                setLoading(false)
+                //signout user
+                signOutFunc()
+                .then(() => {
+                  toast.success(
+                    "Signup successful.Check our email to active your account",
+                  );
+                   setUser(null);
+                   navigate("/signin")
+                 });
+              })
+              .catch((e) => {
+                //  console.log(e);
+                toast.error(e.message);
+              });
+            // console.log(res);
+            toast.success("Signup successful");
+          })
+          .catch((e) => {
+            // console.log(e)
+            toast.success(e.message);
+          });
+        console.log(e);
         toast.success("Signup successful");
       })
       .catch((error) => {
-        console.log(error)
+        // console.log(error);
         console.log(error.code);
         // toast.error(e.message);
         if (error.code == "auth/email-already-in-use") {

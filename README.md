@@ -1,1 +1,1 @@
-live link : https://firebase-fighter-df9ac2.netlify.app/
+live link : https://fir-fighter-2eb60.web.app

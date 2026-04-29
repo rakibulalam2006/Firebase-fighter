@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 const AboutUs = () => {
   const [date, setDate] = useState(new Date());
 
-  console.log(date);
+  // console.log(date);
 
   const handleNotify = () => {
     toast.success("🎉 You’ll be notified when the About Us page is ready!", {
@@ -47,8 +47,8 @@ const AboutUs = () => {
         </button>
       </div>
 
-      <div className="absolute bottom-6 text-white text-sm animate-pulse">
-        Developed by <span className="font-bold">Utsho 💎</span>
+      <div className="absolute bottom-11 text-white text-sm animate-pulse">
+        Developed by <span className="font-bold"> Sifat 💎</span>
       </div>
     </div>
   );

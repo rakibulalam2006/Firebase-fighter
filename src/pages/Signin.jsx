@@ -1,60 +1,106 @@
-import React, { useState } from "react";
+import React, { useContext, useRef, useState } from "react";
 import MyContainer from "../Components/MyContainer";
-import { Link } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { IoEyeOff } from "react-icons/io5";
 import { FaRegEye } from "react-icons/fa";
-import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, signOut } from "firebase/auth";
-import { auth } from "../Firebase/Firebase.config";
+import { AuthContext } from "../context/AuthContext";
 import { toast } from "react-toastify";
 
 
-const googleProvider = new GoogleAuthProvider();
-
 const Signin = () => {
-  const [user, setUser] = useState(null);
   const [show, setShow] = useState(false);
+  const emailRef = useRef(null);
+  const {
+    signinWithEmailPasswordFunc,
+    signinWithGoogleFunc,
+    signinWithGithubFunc,
+    sendPassResetEmailFunc,
+    signOutFunc,
+    setUser,
+    setLoading,
+    user,
+  } = useContext(AuthContext);
+  const location = useLocation();
+  // console.log(location);
+  const form = location.state || "/";
+  const navigate = useNavigate();
+
+  if(user){
+    navigate("/");
+    return;
+  }
 
   const handleSignin = (e) => {
     e.preventDefault();
     const email = e.target.email?.value;
     const password = e.target.password?.value;
-    console.log({ email, password });
-    signInWithEmailAndPassword(auth, email, password)
+    // console.log({ email, password });
+    signinWithEmailPasswordFunc( email, password)
       .then((res) => {
-        console.log(res);
+        if (!res.user.emailVerified) {
+          signOutFunc();
+          setLoading(false);
+          toast.error("your email is not verified.");
+          return;
+        }
+        // console.log(res);
         setUser(res.user);
         toast.success("Signin successful");
+        navigate(form);
       })
       .catch((e) => {
-        console.log(e);
+        // console.log(e);
         toast.error(e.message);
       });
   };
 
   const handleGoogleSignin = () =>{
-    signInWithPopup(auth,googleProvider)
-    .then((res) => {
-        console.log(res);
+    signinWithGoogleFunc()
+      .then((res) => {
+        // console.log(res);
         setUser(res.user);
+        setLoading(false);
         toast.success("Signin successful");
+        navigate(form);
       })
       .catch((e) => {
-        console.log(e);
+        // console.log(e);
+        toast.error(e.message);
+      });
+  }
+  
+  const handleGithubSignIn = () =>{
+    signinWithGithubFunc()
+      .then((res) => {
+        // console.log(res);
+        setUser(res.user);
+        setLoading(false);
+        toast.success("Signin successful");
+        navigate(form);
+      })
+      .catch((e) => {
+        // console.log(e);
         toast.error(e.message);
       });
   }
 
-  const handleSignOut = ()=> {
-    signOut(auth)
-    .then(()=>{
-      toast.success('Signout successful')
-      setUser(null);
-    })
-    .catch((e)=>{
-      toast.error(e.message)
-    })
+  const handleResetPassword = () =>{
+    const email = emailRef.current.value;
+    sendPassResetEmailFunc(email)
+      .then((res) => {
+        console.log(res)
+        setLoading(false);
+        toast.success("Check your email to reset password");
+      })
+      .catch((e) => {
+        toast.error(e.message);
+      });
+    // console.log(e.target.email)
+    // console.log(email);
   }
-  console.log(user);
+ 
+  
+  // console.log(user);
   return (
     <div className="min-h-[calc(100vh-20px)] flex items-center justify-center bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 relative overflow-hidden">
       {/* Animated glow orbs */}
@@ -74,23 +120,11 @@ const Signin = () => {
               features, and more.
             </p>
           </div>
-
           {/* Login card */}
           <div className="w-full max-w-md backdrop-blur-lg bg-white/10 border border-white/20 shadow-2xl rounded-2xl p-8">
-            {user ? (
-              <div className="text-center space-y-3">
-                <img
-                  src={user?.photoURL || "https://via.placeholder.com/88"}
-                  className="h-20 w-20 rounded-full mx-auto bg-white"
-                  alt=""
-                />
-                <h2 className="text-xl font-semibold">{user?.displayName}</h2>
-                <p className="text-white/80">{user?.email}</p>
-                <button onClick={handleSignOut} className="my-btn">
-                  Sign Out
-                </button>
-              </div>
-            ) : (
+            
+              
+          
               <form onSubmit={handleSignin} className="space-y-5">
                 <h2 className="text-2xl font-semibold mb-2 text-center text-white">
                   Sign In
@@ -100,6 +134,9 @@ const Signin = () => {
                   <input
                     type="email"
                     name="email"
+                    ref={emailRef}
+                    // value={email}
+                    // onChange={()=>setEmail(email.target.value)}
                     placeholder="example@email.com"
                     className="input input-bordered w-full bg-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
@@ -112,7 +149,7 @@ const Signin = () => {
                   <input
                     type={show ? "text" : "password"}
                     name="password"
-                    placeholder="••••••••"
+                    placeholder="•••••••"
                     className="input input-bordered w-full bg-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-pink-400"
                   />
                   <span
@@ -126,6 +163,7 @@ const Signin = () => {
                 <button
                   className="hover:underline cursor-pointer"
                   type="button"
+                  onClick={handleResetPassword}
                 >
                   Forget password?
                 </button>
@@ -147,16 +185,39 @@ const Signin = () => {
                   type="button"
                   className="flex items-center justify-center gap-3 bg-white text-gray-800 px-5 py-2 rounded-lg w-full font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
                 >
-                  <img
-                    src="https://www.svgrepo.com/show/475656/google-color.svg"
-                    alt="google"
-                    className="w-5 h-5"
-                  />
-                  Continue with Google
+                  <svg
+                    aria-label="Google logo"
+                    width="16"
+                    height="16"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 512 512"
+                  >
+                    <g>
+                      <path d="m0 0H512V512H0" fill="#fff"></path>
+                      <path
+                        fill="#34a853"
+                        d="M153 292c30 82 118 95 171 60h62v48A192 192 0 0190 341"
+                      ></path>
+                      <path
+                        fill="#4285f4"
+                        d="m386 400a140 175 0 0053-179H260v74h102q-7 37-38 57"
+                      ></path>
+                      <path
+                        fill="#fbbc02"
+                        d="m90 341a208 200 0 010-171l63 49q-12 37 0 73"
+                      ></path>
+                      <path
+                        fill="#ea4335"
+                        d="m153 219c22-69 116-109 179-50l55-54c-78-75-230-72-297 55"
+                      ></path>
+                    </g>
+                  </svg>
+                  Login with Google
                 </button>
 
                 {/* Github Signin */}
                 <button
+                  onClick={handleGithubSignIn}
                   type="button"
                   className="flex items-center justify-center gap-3 bg-white text-gray-800 px-5 py-2 rounded-lg w-full font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
                 >
@@ -178,7 +239,7 @@ const Signin = () => {
                   </Link>
                 </p>
               </form>
-            )}
+        
           </div>
         </div>
       </MyContainer>
